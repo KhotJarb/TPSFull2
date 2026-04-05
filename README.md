@@ -21,6 +21,35 @@ You will:
 
 ---
 
+## 🎮 Play Now
+
+👉 **[Play Thailand Political Simulation](https://khotjarb.github.io/TPSFull/)**
+
+No downloads. No installs. Just click and play.
+
+---
+
+## 🚀 Quick Start
+
+### Play Locally
+
+No build step required. Just serve the files:
+
+```bash
+# Option 1: Node.js (built-in)
+npx -y http-server . -p 8080 -c-1
+
+# Option 2: Python
+python -m http.server 8080
+
+# Option 3: VS Code
+# Install "Live Server" extension → Right-click index.html → "Open with Live Server"
+```
+
+Then open **http://localhost:8080** in your browser.
+
+---
+
 ## 📁 Project Structure
 
 ```
@@ -44,27 +73,6 @@ TPSREAL/
     ├── main.js             ← UI binding & game loop
     └── README.md           ← Module-specific docs
 ```
-
----
-
-## 🚀 Quick Start
-
-### Play Locally
-
-No build step required. Just serve the files:
-
-```bash
-# Option 1: Node.js (built-in)
-npx -y http-server . -p 8080 -c-1
-
-# Option 2: Python
-python -m http.server 8080
-
-# Option 3: VS Code
-# Install "Live Server" extension → Right-click index.html → "Open with Live Server"
-```
-
-Then open **http://localhost:8080** in your browser.
 
 ## 🗳️ Game Mechanics
 
