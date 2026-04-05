@@ -66,32 +66,6 @@ python -m http.server 8080
 
 Then open **http://localhost:8080** in your browser.
 
-### Deploy to GitHub Pages
-
-1. **Push to GitHub:**
-   ```bash
-   git init
-   git add .
-   git commit -m "TPS v1.0 — Thailand Political Simulation"
-   git remote add origin https://github.com/YOUR_USERNAME/tps-game.git
-   git push -u origin main
-   ```
-
-2. **Enable GitHub Pages:**
-   - Go to **Settings → Pages**
-   - Source: **Deploy from a branch**
-   - Branch: `main` / `/ (root)`
-   - Click **Save**
-
-3. **Access your game:**
-   ```
-   https://YOUR_USERNAME.github.io/tps-game/
-   ```
-
-> **Note:** The game uses D3.js via CDN (`d3js.org`), so an internet connection is needed on first load. All other assets are self-contained.
-
----
-
 ## 🗳️ Game Mechanics
 
 ### Election System (Campaign Module)
