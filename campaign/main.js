@@ -19,6 +19,7 @@ function toast(msg, type = 'info') {
 
 // ─── VARIABLES ──────────────────────────────────────────────────
 let selectedPartyId = null;
+let selectedDifficulty = 'normal';  // Default difficulty
 let currentAction = null;
 let editingMpId = null;
 let mapProjection = null;
@@ -67,9 +68,24 @@ function renderPartyCards() {
 
 document.getElementById('btn-start-campaign').addEventListener('click', () => {
   if (!selectedPartyId) return;
+
+  // ── Save difficulty permanently to localStorage ──
+  localStorage.setItem('tps_difficulty', selectedDifficulty);
+  TPSGlobalState.difficulty = selectedDifficulty;
+  console.log(`[campaign/main.js] Difficulty locked: ${selectedDifficulty}`);
+
   initCampaignState(selectedPartyId);
   const party = CAMPAIGN_PARTIES.find(p => p.id === selectedPartyId);
   campaignState.playerFunds = party.campaignFunds;
+  // Initialize the Unified Time Engine (Part 2)
+  initCampaignTimeline();
+
+  // ── STEP 2 FIX: Persist UI state so language reload doesn't reset ──
+  localStorage.setItem('campaign_ui_state', 'dashboard');
+  localStorage.setItem('campaign_party_id', selectedPartyId);
+  _saveCampaignToStorage();
+  console.log('[campaign/main.js] UI state saved: dashboard');
+
   showScreen('screen-campaign');
   renderDashboard();
   initMap();
@@ -81,26 +97,31 @@ document.getElementById('btn-start-campaign').addEventListener('click', () => {
 
 function renderDashboard() {
   // Header
-  document.getElementById('week-number').textContent = campaignState.currentWeek;
-  document.getElementById('year-badge').textContent = `${campaignState.electionYear} Election`;
+  document.getElementById('week-number').textContent = CampaignCalendar.getWeek();
+  document.getElementById('year-badge').textContent = `${campaignState.electionYear} Election — Day ${CampaignCalendar.currentDay}`;
   document.getElementById('val-funds').textContent = campaignState.playerFunds;
   document.getElementById('val-scrutiny').textContent = campaignState.playerScrutiny;
   document.getElementById('val-ap').textContent = campaignState.actionPointsRemaining;
 
-  // Show election button on final week
-  const isLastWeek = campaignState.currentWeek >= campaignState.maxWeeks;
-  document.getElementById('btn-end-week').style.display = isLastWeek ? 'none' : '';
-  document.getElementById('btn-hold-election').style.display = isLastWeek ? '' : 'none';
+  // Show election button on final day
+  const isCampaignOver = CampaignCalendar.isLastDay();
+  document.getElementById('btn-next-day').style.display = isCampaignOver ? 'none' : '';
+  document.getElementById('btn-end-week').style.display = isCampaignOver ? 'none' : '';
+  document.getElementById('btn-hold-election').style.display = isCampaignOver ? '' : 'none';
 
   // Disable actions if no AP
-  document.querySelectorAll('.action-btn').forEach(btn => {
+  document.querySelectorAll('#action-buttons .action-btn').forEach(btn => {
     btn.disabled = campaignState.actionPointsRemaining <= 0;
   });
 
   renderPolls();
   renderCampaignLog();
   renderRoster();
+  renderCalendarStrip();
   updateMap();
+
+  // STEP 2 FIX: Auto-save state after every dashboard render
+  _saveCampaignToStorage();
 }
 
 // ─── Polls ──────────────────────────────────────────────────────
@@ -284,18 +305,206 @@ document.getElementById('btn-cancel-action').addEventListener('click', () => {
   currentAction = null;
 });
 
-// ─── Week Controls ──────────────────────────────────────────────
-document.getElementById('btn-end-week').addEventListener('click', () => {
-  const result = advanceWeek();
-  if (result.done) {
+// ─── Daily Advancement (NEW — Part 2) ───────────────────────────
+
+/**
+ * renderCalendarStrip() — Renders the unified 7-day calendar strip
+ * showing the current week with day type coloring.
+ */
+function renderCalendarStrip() {
+  const container = document.getElementById('cal-strip-days');
+  if (!container) return;
+
+  const weekDays = getCurrentWeekCalendarData();
+  container.innerHTML = '';
+
+  weekDays.forEach(day => {
+    const cell = document.createElement('div');
+    cell.className = `cal-day-cell type-${day.type}`;
+    if (day.isCurrent) cell.classList.add('is-current');
+    if (day.isPast) cell.classList.add('is-past');
+    cell.style.position = 'relative';
+
+    cell.innerHTML = `
+      <span class="cal-dow">${day.dayName}</span>
+      <span class="cal-icon">${day.icon}</span>
+      <span class="cal-num">${day.day}</span>
+      <span class="cal-type">${day.isParliament ? '🏛️' : day.type === 'rest' ? '🌙' : ''}</span>
+    `;
+    container.appendChild(cell);
+  });
+}
+
+// ─── Next Day Button ─────────────────────────────────────────────
+document.getElementById('btn-next-day').addEventListener('click', () => {
+  const result = advanceCampaignDay();
+  if (!result) return;
+
+  if (result.type === 'campaign_end') {
     toast(result.message, 'warning');
+    document.getElementById('btn-next-day').style.display = 'none';
     document.getElementById('btn-end-week').style.display = 'none';
     document.getElementById('btn-hold-election').style.display = '';
-  } else {
-    toast(`Week ${result.week} begins`, 'success');
+    renderDashboard();
+    return;
   }
+
+  // Parliament Day? Show modal
+  if (result.isParliament) {
+    _showParliamentModal(result);
+  } else {
+    // Check for lobbyist event
+    const event = rollLobbyistEvent(25);
+    if (event) {
+      _showLobbyistModal(event);
+    } else {
+      toast(`☀️ ${result.dayName} (${result.dayNameThai}) — ${result.dayType.label}`, 'info');
+    }
+  }
+
   renderDashboard();
 });
+
+// ─── Skip to Week End Button ─────────────────────────────────────
+document.getElementById('btn-end-week').addEventListener('click', () => {
+  let lastResult = null;
+  let hitParliament = false;
+
+  while (true) {
+    if (CampaignCalendar.isLastDay()) break;
+
+    const result = advanceCampaignDay();
+    lastResult = result;
+
+    if (result.isParliament) {
+      hitParliament = true;
+      _showParliamentModal(result);
+      break;
+    }
+
+    if (result.dayOfWeek === 6) break;
+  }
+
+  if (!hitParliament && lastResult) {
+    toast(`Fast-forwarded to ${lastResult.dayName}. Week ${lastResult.week}.`, 'info');
+  }
+
+  renderDashboard();
+});
+
+// ─── Parliament Day Modal ────────────────────────────────────────
+function _showParliamentModal(dayResult) {
+  const modal = document.getElementById('parliament-modal');
+  const title = document.getElementById('parl-modal-title');
+  const desc = document.getElementById('parl-modal-desc');
+
+  title.textContent = `🏛️ ${dayResult.dayName} — ${dayResult.dayNameThai}`;
+
+  if (dayResult.dayType.type === 'urgent') {
+    desc.textContent = 'An urgent censure motion has been called! The House demands your attendance. Ignoring this will be extremely costly.';
+  } else {
+    desc.textContent = 'Today is a Parliament session day. As an elected MP, you have a duty to attend. The Speaker is calling the House to order.';
+  }
+
+  modal.style.display = 'flex';
+}
+
+document.getElementById('btn-enter-parliament').addEventListener('click', () => {
+  const choice = handleParliamentChoice('enter');
+  document.getElementById('parliament-modal').style.display = 'none';
+
+  if (choice.action === 'redirect') {
+    // STEP 3 FIX: Save campaign state to localStorage BEFORE leaving
+    saveCampaignState();
+    toast(choice.message, 'success');
+    setTimeout(() => {
+      window.location.href = choice.target;
+    }, 800);
+  }
+});
+
+document.getElementById('btn-ignore-parliament').addEventListener('click', () => {
+  const choice = handleParliamentChoice('ignore');
+  document.getElementById('parliament-modal').style.display = 'none';
+
+  toast(choice.message, 'warning');
+  renderDashboard();
+});
+
+// ─── Lobbyist Event Modal ────────────────────────────────────────
+function _showLobbyistModal(event) {
+  const modal = document.getElementById('parliament-modal');
+  const box = modal.querySelector('.modal-box');
+
+  // Store original HTML for restoration
+  if (!modal._originalHTML) {
+    modal._originalHTML = box.innerHTML;
+  }
+
+  box.innerHTML = `
+    <div class="lobby-modal-content">
+      <h2>${event.title}</h2>
+      <p>${event.description}</p>
+      <div class="lobby-choices" id="lobby-choices"></div>
+    </div>
+  `;
+
+  const container = box.querySelector('#lobby-choices');
+  event.choices.forEach((choice) => {
+    const btn = document.createElement('button');
+    btn.className = 'lobby-choice-btn';
+
+    let effectsHTML = '';
+    for (const [key, val] of Object.entries(choice.effects || {})) {
+      const isPos = val > 0;
+      effectsHTML += `<span class="${isPos ? 'lobby-effect-pos' : 'lobby-effect-neg'}">${isPos ? '+' : ''}${val} ${key}</span>`;
+    }
+
+    btn.innerHTML = `
+      <span class="lobby-choice-label">${choice.label}</span>
+      <span class="lobby-choice-risk">Risk: ${choice.risk}</span>
+      <div class="lobby-choice-effects">${effectsHTML}</div>
+    `;
+
+    btn.addEventListener('click', () => {
+      applyLobbyistChoice(choice);
+      modal.style.display = 'none';
+      _restoreParliamentModal();
+      toast(`${choice.label} — Applied!`, 'success');
+      renderDashboard();
+    });
+
+    container.appendChild(btn);
+  });
+
+  modal.style.display = 'flex';
+}
+
+function _restoreParliamentModal() {
+  const modal = document.getElementById('parliament-modal');
+  const box = modal.querySelector('.modal-box');
+  if (modal._originalHTML) {
+    box.innerHTML = modal._originalHTML;
+    // Re-bind buttons
+    document.getElementById('btn-enter-parliament').addEventListener('click', () => {
+      const choice = handleParliamentChoice('enter');
+      modal.style.display = 'none';
+      if (choice.action === 'redirect') {
+        // STEP 3 FIX: Save campaign state to localStorage BEFORE leaving
+        saveCampaignState();
+        toast(choice.message, 'success');
+        setTimeout(() => { window.location.href = choice.target; }, 800);
+      }
+    });
+    document.getElementById('btn-ignore-parliament').addEventListener('click', () => {
+      const choice = handleParliamentChoice('ignore');
+      modal.style.display = 'none';
+      toast(choice.message, 'warning');
+      renderDashboard();
+    });
+  }
+}
+
 
 document.getElementById('btn-hold-election').addEventListener('click', () => {
   const results = runElection();
@@ -606,5 +815,236 @@ function renderResult(result) {
 // ═══════════════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════════════
-renderPartyCards();
+
+/**
+ * _checkReturnFromParliament() — Step 2 fix.
+ * If the player is returning from Parliament, skip Party Select
+ * and jump straight to the active Campaign Dashboard.
+ * Consumes parliament return data (bonus capital, etc.) from sessionStorage.
+ */
+function _checkReturnFromParliament() {
+  if (localStorage.getItem('returnFromParliament') !== 'true') return false;
+
+  console.log('[campaign/main.js] Return from Parliament detected — bypassing Party Select.');
+  localStorage.removeItem('returnFromParliament');
+
+  // STEP 3 FIX: Try loadCampaignState() from localStorage FIRST (most reliable)
+  let restored = false;
+  if (typeof loadCampaignState === 'function') {
+    restored = loadCampaignState();
+    if (restored) {
+      console.log('[campaign/main.js] Campaign state restored from localStorage (engine.js).');
+    }
+  }
+
+  // Fallback: try sessionStorage
+  if (!restored) {
+    try {
+      const savedState = sessionStorage.getItem('tps_campaign_state');
+      if (savedState) {
+        const parsed = JSON.parse(savedState);
+        Object.assign(campaignState, parsed);
+        restored = true;
+        console.log('[campaign/main.js] Campaign state restored from sessionStorage (fallback).');
+      }
+    } catch (e) {
+      console.warn('[campaign/main.js] Could not restore campaign state:', e);
+    }
+  }
+
+  // Last resort: init with default party
+  if (!restored) {
+    const defaultParty = CAMPAIGN_PARTIES[0];
+    initCampaignState(defaultParty.id);
+    campaignState.playerFunds = defaultParty.campaignFunds;
+    initCampaignTimeline();
+    console.log('[campaign/main.js] No saved state found — initialized with default party.');
+  } else if (!restored || typeof CampaignCalendar === 'undefined') {
+    // Only re-init timeline if loadCampaignState didn't set the calendar
+    initCampaignTimeline();
+    if (campaignState._calendarDay) {
+      CampaignCalendar.currentDay = campaignState._calendarDay;
+    }
+  }
+
+  // Consume parliament return data (bonus effects)
+  try {
+    const parlReturn = sessionStorage.getItem('tps_parliament_to_campaign');
+    if (parlReturn) {
+      const data = JSON.parse(parlReturn);
+      sessionStorage.removeItem('tps_parliament_to_campaign');
+
+      // Apply capital bonus (earned from debates/protests/votes)
+      if (data.capitalChange) {
+        // Convert parliament capital to campaign scrutiny reduction
+        const scrutinyReduction = Math.floor(data.capitalChange / 3);
+        campaignState.playerScrutiny = Math.max(0, campaignState.playerScrutiny - scrutinyReduction);
+        console.log(`[campaign/main.js] Parliament capital → Scrutiny reduced by ${scrutinyReduction}`);
+      }
+
+      // Log the return
+      campaignState.campaignLog.push({
+        week: CampaignCalendar.getWeek(),
+        type: 'parliament',
+        message: `🏛️ Returned from Parliament — ${data.debatesCompleted || 0} debates, ${data.protestsWon || 0} protests won, ${data.votesAttended || 0} votes`
+      });
+
+      toast(`🏛️ Welcome back! Parliament results applied.`, 'success');
+    }
+  } catch (e) {
+    console.warn('[campaign/main.js] Could not consume parliament return data:', e);
+  }
+
+  // Skip to dashboard
+  showScreen('screen-campaign');
+  renderDashboard();
+  initMap();
+
+  return true;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// STEP 2 FIX: Save/Restore helpers for campaign state persistence
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * _saveCampaignToStorage() — Serializes campaignState to sessionStorage.
+ * Called after each state-changing action and on "Begin Campaign".
+ */
+function _saveCampaignToStorage() {
+  try {
+    if (campaignState) {
+      // Save to sessionStorage (for same-tab restores)
+      sessionStorage.setItem('tps_campaign_state', JSON.stringify(campaignState));
+      // STEP 3 FIX: Also save to localStorage (survives tab close + parliament trips)
+      saveCampaignState();
+    }
+  } catch (e) {
+    console.warn('[campaign/main.js] Could not save campaign state:', e);
+  }
+}
+
+/**
+ * _restoreDashboardFromStorage() — Restores the campaign dashboard
+ * after a language-change page reload. Reads from localStorage
+ * (UI state flag + party ID) and sessionStorage (full campaign state).
+ * @returns {boolean} true if dashboard was restored
+ */
+function _restoreDashboardFromStorage() {
+  if (localStorage.getItem('campaign_ui_state') !== 'dashboard') return false;
+
+  const savedPartyId = localStorage.getItem('campaign_party_id');
+  if (!savedPartyId) return false;
+
+  console.log('[campaign/main.js] Restoring dashboard after reload...');
+
+  // STEP 3 FIX: Try loadCampaignState() from localStorage FIRST
+  // This is the most reliable source — survives tab closes and parliament trips.
+  let restored = false;
+  if (typeof loadCampaignState === 'function') {
+    restored = loadCampaignState();
+    if (restored) {
+      console.log('[campaign/main.js] Full campaign state restored from localStorage (engine.js).');
+    }
+  }
+
+  // Fallback: try sessionStorage (for backward compat)
+  if (!restored) {
+    try {
+      const savedState = sessionStorage.getItem('tps_campaign_state');
+      if (savedState) {
+        initCampaignState(savedPartyId);
+        Object.assign(campaignState, JSON.parse(savedState));
+        restored = true;
+        console.log('[campaign/main.js] Campaign state restored from sessionStorage (fallback).');
+      }
+    } catch (e) {
+      console.warn('[campaign/main.js] Could not restore session data:', e);
+    }
+  }
+
+  // Last resort: re-initialize with saved party
+  if (!restored) {
+    initCampaignState(savedPartyId);
+    const party = CAMPAIGN_PARTIES.find(p => p.id === savedPartyId);
+    if (party) campaignState.playerFunds = party.campaignFunds;
+    console.log('[campaign/main.js] No saved data — re-initialized with saved party.');
+  }
+
+  // Set globals
+  selectedPartyId = savedPartyId;
+  selectedDifficulty = localStorage.getItem('tps_difficulty') || 'normal';
+  TPSGlobalState.difficulty = selectedDifficulty;
+
+  // Initialize timeline (won't reset calendar if loadCampaignState already set it)
+  if (!restored || typeof CampaignCalendar === 'undefined') {
+    initCampaignTimeline();
+  }
+
+  // Show dashboard
+  showScreen('screen-campaign');
+  renderDashboard();
+  initMap();
+
+  console.log('[campaign/main.js] Dashboard restored successfully.');
+  return true;
+}
+
+/**
+ * clearCampaignUIState() — Clears all campaign persistence.
+ * Call this when the player resets progress or returns to main menu.
+ */
+function clearCampaignUIState() {
+  localStorage.removeItem('campaign_ui_state');
+  localStorage.removeItem('campaign_party_id');
+  sessionStorage.removeItem('tps_campaign_state');
+  console.log('[campaign/main.js] Campaign UI state cleared.');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// BOOT SEQUENCE — Determines which screen to show on page load.
+// Priority: 1) Return from Parliament → Dashboard
+//           2) Saved UI state → Dashboard (language reload)
+//           3) STRICT FALLBACK → Party Select (default/wipe)
+// ═══════════════════════════════════════════════════════════════════
+if (!_checkReturnFromParliament()) {
+  if (!_restoreDashboardFromStorage()) {
+    // ── STRICT FALLBACK: Force Party Select screen ──
+    // This runs when:
+    //   - Fresh first visit (no saved state)
+    //   - After Wipe Save Data (all state keys cleared)
+    //   - After game completion / manual reset
+    console.log('[campaign/main.js] No saved state found — showing Party Select.');
+    showScreen('screen-party-select');
+    renderPartyCards();
+    _initDifficultySelector();
+  }
+}
+
 console.log('[campaign/main.js] UI initialized.');
+
+// ═══════════════════════════════════════════════════════════════════
+// DIFFICULTY SELECTOR — Binds the 3-button group on Party Select
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * _initDifficultySelector() — Binds click handlers to Easy/Normal/Hard
+ * buttons. Defaults to 'normal'. Selection is final once "Begin Campaign"
+ * is clicked (saved to localStorage, never changeable again).
+ */
+function _initDifficultySelector() {
+  const group = document.getElementById('diff-btn-group');
+  if (!group) return;
+
+  const buttons = group.querySelectorAll('.diff-btn');
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      // Remove active from all
+      buttons.forEach(b => b.classList.remove('active'));
+      // Set this one active
+      btn.classList.add('active');
+      selectedDifficulty = btn.dataset.difficulty;
+      console.log(`[campaign/main.js] Difficulty selected: ${selectedDifficulty}`);
+    });
+  });
+}

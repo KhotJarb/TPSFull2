@@ -1,7 +1,28 @@
 // ============================================================
 // THAILAND POLITICAL SIMULATION (TPS) — engine.js
 // Game Engine: Turn Logic, Crisis Resolution, Law Voting
+// Difficulty-Scaled via shared/settings.js (TPSGlobalState)
 // ============================================================
+
+/**
+ * getGovDiffScale() — Returns difficulty multipliers for the Governing module.
+ *
+ *   crisisEffectMult:    Amplifies negative crisis choice effects
+ *   monthlyDecayMult:    Amplifies monthly unrest/popularity decay
+ *   defectionThreshold:  Relation below which parties may defect (default -30)
+ *   militaryDrainMult:   Amplifies military patience loss from unrest
+ *   budgetIncomeMult:    Scales monthly budget income
+ *   coalitionJoinThreshold: Relation above which parties may join (default 50)
+ */
+function getGovDiffScale() {
+  const d = (typeof TPSGlobalState !== 'undefined') ? TPSGlobalState.difficulty : 'normal';
+  const scales = {
+    easy:   { crisisEffectMult: 0.7,  monthlyDecayMult: 0.6, defectionThreshold: -45, militaryDrainMult: 0.6, budgetIncomeMult: 1.3, coalitionJoinThreshold: 40 },
+    normal: { crisisEffectMult: 1.0,  monthlyDecayMult: 1.0, defectionThreshold: -30, militaryDrainMult: 1.0, budgetIncomeMult: 1.0, coalitionJoinThreshold: 50 },
+    hard:   { crisisEffectMult: 1.4,  monthlyDecayMult: 1.5, defectionThreshold: -20, militaryDrainMult: 1.5, budgetIncomeMult: 0.75, coalitionJoinThreshold: 65 }
+  };
+  return scales[d] || scales.normal;
+}
 
 // ─── GAME STATE (mutable, cloned from INITIAL_GAME_STATE) ───
 let gameState = null;
@@ -174,8 +195,21 @@ function resolveCrisisChoice(choiceIndex) {
     return null;
   }
 
-  // Apply stat effects
-  applyEffects(choice.effects);
+  // Apply stat effects (scaled by difficulty — negative effects are amplified)
+  const gds = getGovDiffScale();
+  const scaledEffects = { ...choice.effects };
+  // Amplify negative effects on harder difficulty
+  for (const key of ['popularity', 'unrest', 'budget', 'coalitionStability', 'militaryPatience']) {
+    if (scaledEffects[key] !== undefined) {
+      // Only amplify HARMFUL direction: -popularity, +unrest, -budget, -stability, -patience
+      const isHarmful = (key === 'unrest' && scaledEffects[key] > 0) ||
+                        (key !== 'unrest' && scaledEffects[key] < 0);
+      if (isHarmful) {
+        scaledEffects[key] = Math.round(scaledEffects[key] * gds.crisisEffectMult);
+      }
+    }
+  }
+  applyEffects(scaledEffects);
 
   // Apply party relationship effects
   applyPartyEffects(choice.partyEffects);
@@ -186,7 +220,7 @@ function resolveCrisisChoice(choiceIndex) {
     eventId: event.id,
     eventTitle: event.title,
     choiceLabel: choice.label,
-    effects: { ...choice.effects },
+    effects: { ...scaledEffects },
     partyEffects: choice.partyEffects ? { ...choice.partyEffects } : {}
   });
 
@@ -199,7 +233,7 @@ function resolveCrisisChoice(choiceIndex) {
   // Build result
   const result = {
     outcome: choice.outcome,
-    effects: choice.effects,
+    effects: scaledEffects,
     partyEffects: choice.partyEffects || {}
   };
 
@@ -389,10 +423,13 @@ function repealLaw(lawId) {
 function checkCoalitionDefections() {
   const defectors = [];
 
+  // ── Defection threshold varies by difficulty ──
+  const gds = getGovDiffScale();
+
   parties.forEach(party => {
-    if (party.inCoalition && party.relation < -30) {
+    if (party.inCoalition && party.relation < gds.defectionThreshold) {
       // Probability of defection increases as relation drops
-      const defectChance = Math.abs(party.relation + 30) / 70; // 0 at -30, 1 at -100
+      const defectChance = Math.abs(party.relation + gds.defectionThreshold) / 70;
       if (Math.random() < defectChance) {
         party.inCoalition = false;
         defectors.push({
@@ -416,9 +453,12 @@ function checkCoalitionDefections() {
 function checkCoalitionJoiners() {
   const joiners = [];
 
+  // ── Join threshold varies by difficulty ──
+  const gds = getGovDiffScale();
+
   parties.forEach(party => {
-    if (!party.inCoalition && party.relation > 50) {
-      const joinChance = (party.relation - 50) / 100; // 0 at 50, 0.5 at 100
+    if (!party.inCoalition && party.relation > gds.coalitionJoinThreshold) {
+      const joinChance = (party.relation - gds.coalitionJoinThreshold) / 100;
       if (Math.random() < joinChance) {
         party.inCoalition = true;
         joiners.push({
@@ -463,11 +503,12 @@ function endTurn() {
     gameOverReason: ""
   };
 
-  // ── 1. Monthly base income & decay ──
+  // ── 1. Monthly base income & decay (scaled by difficulty) ──
+  const gds = getGovDiffScale();
   const baseChanges = {
-    budget: GAME_CONSTANTS.MONTHLY_BUDGET_INCOME,
-    unrest: GAME_CONSTANTS.MONTHLY_UNREST_DECAY,
-    popularity: GAME_CONSTANTS.MONTHLY_POPULARITY_DECAY
+    budget: Math.round(GAME_CONSTANTS.MONTHLY_BUDGET_INCOME * gds.budgetIncomeMult),
+    unrest: Math.round(GAME_CONSTANTS.MONTHLY_UNREST_DECAY * gds.monthlyDecayMult),
+    popularity: Math.round(GAME_CONSTANTS.MONTHLY_POPULARITY_DECAY * gds.monthlyDecayMult)
   };
 
   // Economic growth affects budget income
@@ -535,10 +576,10 @@ function endTurn() {
     });
   }
 
-  // ── 5. Military patience ──
+  // ── 5. Military patience (scaled by difficulty) ──
   // High unrest erodes military patience
   if (gameState.unrest > 60) {
-    const patienceLoss = Math.round((gameState.unrest - 60) * 0.25);
+    const patienceLoss = Math.round((gameState.unrest - 60) * 0.25 * gds.militaryDrainMult);
     gameState.militaryPatience = clamp(
       gameState.militaryPatience - patienceLoss, 0, 100
     );

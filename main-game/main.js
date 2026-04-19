@@ -629,6 +629,9 @@ function showWarnings(warnings) {
 function showGameOver(reason) {
   showScreen("gameover-screen");
 
+  // STEP 3 FIX: Clear UI state — game is over
+  localStorage.removeItem('maingame_ui_state');
+
   const isVictory = reason === "VICTORY";
 
   DOM.gameoverIcon.textContent = isVictory ? "🏆" : "💥";
@@ -697,6 +700,10 @@ function initGame(loadSave = false) {
 
   showScreen("game-screen");
 
+  // STEP 3 FIX: Persist UI state so language reload doesn't reset to start screen
+  localStorage.setItem('maingame_ui_state', 'dashboard');
+  console.log('[main-game/main.js] UI state saved: dashboard');
+
   // Update all UI elements
   updateStatusBar();
   updateHeader();
@@ -750,6 +757,8 @@ DOM.btnMenu.addEventListener("click", () => {
   });
   document.getElementById("menu-quit").addEventListener("click", () => {
     hideModal();
+    // STEP 3 FIX: Clear UI state on quit
+    localStorage.removeItem('maingame_ui_state');
     showScreen("start-screen");
   });
 });
@@ -762,6 +771,8 @@ DOM.modalOverlay.addEventListener("click", (e) => {
 
 // Restart
 DOM.btnRestart.addEventListener("click", () => {
+  // STEP 3 FIX: Clear UI state on restart
+  localStorage.removeItem('maingame_ui_state');
   showScreen("start-screen");
 });
 
@@ -801,14 +812,40 @@ function showHowToPlay() {
   `);
 }
 
-// ─── INITIAL LOAD ───────────────────────────────────────────
-
+// ═══════════════════════════════════════════════════════════════════
+// BOOT SEQUENCE — Determines which screen to show on page load.
+// Priority: 1) Saved UI state = 'dashboard' → restore game
+//           2) STRICT FALLBACK → Start Screen (default/wipe)
+// ═══════════════════════════════════════════════════════════════════
 (function onPageLoad() {
-  // Check for saved game
-  if (hasSavedGame()) {
-    DOM.btnLoadGame.style.display = "inline-flex";
+  // Check if we were on the dashboard (language-change reload)
+  if (localStorage.getItem('maingame_ui_state') === 'dashboard') {
+    try {
+      console.log('[main-game/main.js] Restoring dashboard after reload...');
+      initGame(hasSavedGame());
+      return;
+    } catch (e) {
+      // If restore fails (e.g. corrupt data after partial wipe), fall through to start screen
+      console.warn('[main-game/main.js] Dashboard restore failed, falling back to start screen:', e);
+      localStorage.removeItem('maingame_ui_state');
+    }
   }
 
-  // Show start screen
+  // ── STRICT FALLBACK: Force Start Screen ──
+  // This runs when:
+  //   - Fresh first visit (no saved state)
+  //   - After Wipe Save Data (all state keys cleared)
+  //   - After game over / manual quit
+  //   - After failed dashboard restore
+  console.log('[main-game/main.js] No saved state — showing Start Screen.');
+
+  // Show/hide Load Game button based on whether a save exists
+  if (hasSavedGame()) {
+    DOM.btnLoadGame.style.display = "inline-flex";
+  } else {
+    DOM.btnLoadGame.style.display = "none";
+  }
+
+  // Explicitly force start screen
   showScreen("start-screen");
 })();

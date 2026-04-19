@@ -83,13 +83,13 @@
 
     <!-- Game Title -->
     <h1 class="game-title" id="game-title">
-      <span class="title-thai">ราชอาณาจักรไทย</span>
-      <span class="title-line title-main">Thailand</span>
-      <span class="title-line title-sub">Political Simulation</span>
+      <span class="title-thai" data-i18n="menu_title_thai">ราชอาณาจักรไทย</span>
+      <span class="title-line title-main" data-i18n="menu_title_main">Thailand</span>
+      <span class="title-line title-sub" data-i18n="menu_title_sub">Political Simulation</span>
     </h1>
 
     <!-- Subtitle -->
-    <p class="game-subtitle" id="game-subtitle">
+    <p class="game-subtitle" id="game-subtitle" data-i18n="menu_subtitle">
       Lead your party to victory. Build coalitions. Govern a nation.
     </p>
 
@@ -120,8 +120,8 @@
             </svg>
           </div>
           <div class="btn-text">
-            <span class="btn-label">Start Election Campaign</span>
-            <span class="btn-desc">Build your party, rally support across 400 districts, and win 251+ seats</span>
+            <span class="btn-label" data-i18n="menu_btn_campaign">Start Election Campaign</span>
+            <span class="btn-desc" data-i18n="menu_btn_campaign_desc">Build your party, rally support across 400 districts, and win 251+ seats</span>
           </div>
           <div class="btn-arrow">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -143,8 +143,8 @@
             </svg>
           </div>
           <div class="btn-text">
-            <span class="btn-label">Quick Start: Form Government</span>
-            <span class="btn-desc">Skip elections — jump straight into governing the Kingdom of Thailand</span>
+            <span class="btn-label" data-i18n="menu_btn_quickstart">Quick Start: Form Government</span>
+            <span class="btn-desc" data-i18n="menu_btn_quickstart_desc">Skip elections — jump straight into governing the Kingdom of Thailand</span>
           </div>
           <div class="btn-arrow">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -160,29 +160,29 @@
     <div class="info-strip" id="info-strip">
       <div class="info-item">
         <span class="info-icon">🗳️</span>
-        <span class="info-text">500 Seats</span>
+        <span class="info-text" data-i18n="menu_info_seats">500 Seats</span>
       </div>
       <div class="info-sep"></div>
       <div class="info-item">
         <span class="info-icon">🏛️</span>
-        <span class="info-text">251 to Govern</span>
+        <span class="info-text" data-i18n="menu_info_govern">251 to Govern</span>
       </div>
       <div class="info-sep"></div>
       <div class="info-item">
         <span class="info-icon">📊</span>
-        <span class="info-text">8-Week Campaign</span>
+        <span class="info-text" data-i18n="menu_info_campaign">8-Week Campaign</span>
       </div>
       <div class="info-sep"></div>
       <div class="info-item">
         <span class="info-icon">⚔️</span>
-        <span class="info-text">48-Month Term</span>
+        <span class="info-text" data-i18n="menu_info_term">48-Month Term</span>
       </div>
     </div>
 
     <!-- Footer -->
     <footer class="menu-footer" id="menu-footer">
-      <p class="footer-text">A Browser-Based Political Strategy Experience</p>
-      <p class="footer-version">v1.0 — 2027 Election Cycle</p>
+      <p class="footer-text" data-i18n="menu_footer_line1">A Browser-Based Political Strategy Experience</p>
+      <p class="footer-version" data-i18n="menu_footer_line2">v1.0 — 2027 Election Cycle</p>
     </footer>
 
   </div>
@@ -190,6 +190,10 @@
   <!-- ═══════════════════════════════════════════════════════════════ -->
   <!-- Scripts                                                          -->
   <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- Shared: Localization & Settings Engine -->
+  <script src="shared/localization.js"></script>
+  <script src="shared/settings.js"></script>
+
   <script>
     // ─── Generate floating gold particles ──────────────────────────
     (function createParticles() {

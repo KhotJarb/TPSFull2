@@ -20,14 +20,41 @@
   <div id="screen-party-select" class="screen active">
     <div class="select-bg"></div>
     <div class="select-content">
-      <a href="../index.html" class="back-link">← Main Menu</a>
+      <a href="../index.html" class="back-link" data-i18n="game_back">← Main Menu</a>
       <div class="select-header">
         <div class="select-emblem">🗳️</div>
-        <h1 class="select-title">Choose Your Party</h1>
-        <p class="select-subtitle">Select the political party you will lead to victory in the <span id="election-year-display">2027</span> general election.</p>
+        <h1 class="select-title" data-i18n="campaign_choose_party">Choose Your Party</h1>
+        <p class="select-subtitle"><span data-i18n="campaign_choose_sub">Select the political party you will lead to victory in the</span> <span id="election-year-display">2027</span> <span data-i18n="campaign_election">general election.</span></p>
       </div>
       <div id="party-cards" class="party-cards"></div>
-      <button id="btn-start-campaign" class="btn btn-gold btn-lg" disabled>
+
+      <!-- ── Difficulty Selector (Permanent — locked after campaign starts) ── -->
+      <div id="difficulty-selector" class="difficulty-selector">
+        <div class="diff-header">
+          <span class="diff-header-icon">⚔️</span>
+          <span class="diff-header-label" data-i18n="diff_select_title">Select Difficulty</span>
+          <span class="diff-header-sub" data-i18n="diff_select_sub">เลือกระดับความยาก — This cannot be changed after the campaign begins.</span>
+        </div>
+        <div class="diff-btn-group" id="diff-btn-group">
+          <button class="diff-btn" data-difficulty="easy" id="diff-btn-easy">
+            <span class="diff-btn-icon">🟢</span>
+            <span class="diff-btn-name" data-i18n="difficulty_easy">Easy</span>
+            <span class="diff-btn-desc" data-i18n="diff_btn_easy_desc">Lower costs, gentler AI</span>
+          </button>
+          <button class="diff-btn active" data-difficulty="normal" id="diff-btn-normal">
+            <span class="diff-btn-icon">🟡</span>
+            <span class="diff-btn-name" data-i18n="difficulty_normal">Normal</span>
+            <span class="diff-btn-desc" data-i18n="diff_btn_normal_desc">Balanced — intended experience</span>
+          </button>
+          <button class="diff-btn" data-difficulty="hard" id="diff-btn-hard">
+            <span class="diff-btn-icon">🔴</span>
+            <span class="diff-btn-name" data-i18n="difficulty_hard">Hard</span>
+            <span class="diff-btn-desc" data-i18n="diff_btn_hard_desc">Punishing, zero margin</span>
+          </button>
+        </div>
+      </div>
+
+      <button id="btn-start-campaign" class="btn btn-gold btn-lg" disabled data-i18n="campaign_begin">
         Begin Campaign →
       </button>
     </div>
@@ -41,11 +68,11 @@
     <header id="campaign-header">
       <div class="ch-left">
         <span class="ch-logo">TPS</span>
-        <span class="ch-title">Campaign HQ</span>
+        <span class="ch-title" data-i18n="campaign_hq">Campaign HQ</span>
       </div>
       <div class="ch-center">
         <div class="week-badge">
-          <span class="week-label">WEEK</span>
+          <span class="week-label" data-i18n="campaign_week">WEEK</span>
           <span id="week-number" class="week-num">1</span>
           <span class="week-sep">/</span>
           <span class="week-max">8</span>
@@ -53,17 +80,17 @@
         <span id="year-badge" class="year-badge">2027 Election</span>
       </div>
       <div class="ch-right">
-        <div class="resource" title="Campaign Funds">
+        <div class="resource" data-i18n="campaign_funds" data-i18n-attr="title">
           <span class="res-icon">💰</span>
           <span id="val-funds" class="res-val">1000</span>
           <span class="res-unit">M฿</span>
         </div>
-        <div class="resource" title="Media Scrutiny">
+        <div class="resource" data-i18n="campaign_scrutiny" data-i18n-attr="title">
           <span class="res-icon">🔍</span>
           <span id="val-scrutiny" class="res-val">0</span>
           <span class="res-unit">%</span>
         </div>
-        <div class="resource" title="Action Points">
+        <div class="resource" data-i18n="campaign_ap" data-i18n-attr="title">
           <span class="res-icon">⚡</span>
           <span id="val-ap" class="res-val">3</span>
           <span class="res-unit">AP</span>
@@ -77,7 +104,7 @@
       <div class="dash-left">
         <div class="panel map-panel">
           <div class="panel-head">
-            <h2><span class="hi">🗺️</span> Thailand Electoral Map</h2>
+            <h2><span class="hi">🗺️</span> <span data-i18n="campaign_map_title">Thailand Electoral Map</span></h2>
             <div class="map-legend" id="map-legend"></div>
           </div>
           <div id="map-container" class="map-container">
@@ -87,58 +114,68 @@
         </div>
 
         <div class="panel poll-panel">
-          <div class="panel-head"><h2><span class="hi">📊</span> National Polls</h2></div>
+          <div class="panel-head"><h2><span class="hi">📊</span> <span data-i18n="campaign_polls_title">National Polls</span></h2></div>
           <div id="poll-bars" class="poll-bars"></div>
+        </div>
+      </div>
+
+      <!-- UNIFIED CALENDAR STRIP (NEW — Part 2) -->
+      <div class="calendar-strip" id="calendar-strip">
+        <div class="cal-strip-inner" id="cal-strip-days">
+          <!-- 7 day cells populated by main.js -->
         </div>
       </div>
 
       <!-- CENTER: Actions + Log -->
       <div class="dash-center">
         <div class="panel actions-panel">
-          <div class="panel-head"><h2><span class="hi">⚡</span> Campaign Actions</h2></div>
+          <div class="panel-head"><h2><span class="hi">⚡</span> <span data-i18n="campaign_actions_title">Campaign Actions</span></h2></div>
           <div id="action-buttons" class="action-grid">
             <button class="action-btn" id="act-rally" data-action="rally">
               <div class="act-icon">📢</div>
-              <div class="act-label">Hold Rally</div>
-              <div class="act-cost">-50M฿ · -1 AP</div>
+              <div class="act-label" data-i18n="action_rally">Hold Rally</div>
+              <div class="act-cost" data-i18n="action_rally_cost">-50M฿ · -1 AP</div>
             </button>
             <button class="action-btn" id="act-io" data-action="io">
               <div class="act-icon">📱</div>
-              <div class="act-label">IO Campaign</div>
-              <div class="act-cost">-80M฿ · -1 AP</div>
+              <div class="act-label" data-i18n="action_io">IO Campaign</div>
+              <div class="act-cost" data-i18n="action_io_cost">-80M฿ · -1 AP</div>
             </button>
             <button class="action-btn" id="act-banyai" data-action="banyai">
               <div class="act-icon">🏘️</div>
-              <div class="act-label">Deploy Ban Yai</div>
-              <div class="act-cost">-120M฿ · -1 AP</div>
+              <div class="act-label" data-i18n="action_banyai">Deploy Ban Yai</div>
+              <div class="act-cost" data-i18n="action_banyai_cost">-120M฿ · -1 AP</div>
             </button>
             <button class="action-btn" id="act-fundraise" data-action="fundraise">
               <div class="act-icon">💵</div>
-              <div class="act-label">Fundraise</div>
-              <div class="act-cost">-1 AP</div>
+              <div class="act-label" data-i18n="action_fundraise">Fundraise</div>
+              <div class="act-cost" data-i18n="action_fundraise_cost">-1 AP</div>
             </button>
           </div>
           <!-- Province/Region/District Selector (shown when relevant) -->
           <div id="target-selector" class="target-selector" style="display:none;">
-            <label id="target-label" class="target-label">Select Target:</label>
+            <label id="target-label" class="target-label" data-i18n="action_select_province">Select Target:</label>
             <select id="target-dropdown" class="target-dropdown"></select>
-            <button id="btn-confirm-action" class="btn btn-gold btn-md">Confirm</button>
-            <button id="btn-cancel-action" class="btn btn-ghost btn-md">Cancel</button>
+            <button id="btn-confirm-action" class="btn btn-gold btn-md" data-i18n="action_confirm">Confirm</button>
+            <button id="btn-cancel-action" class="btn btn-ghost btn-md" data-i18n="action_cancel">Cancel</button>
           </div>
         </div>
 
         <div class="panel">
-          <div class="panel-head"><h2><span class="hi">📖</span> Campaign Log</h2></div>
+          <div class="panel-head"><h2><span class="hi">📖</span> <span data-i18n="campaign_log_title">Campaign Log</span></h2></div>
           <div id="campaign-log" class="campaign-log">
-            <div class="log-empty">Campaign begins. Choose your actions wisely.</div>
+            <div class="log-empty" data-i18n="campaign_log_empty">Campaign begins. Choose your actions wisely.</div>
           </div>
         </div>
 
         <div class="week-controls">
-          <button id="btn-end-week" class="btn btn-gold btn-lg">
-            End Week & Advance →
+          <button id="btn-next-day" class="btn btn-gold btn-lg" data-i18n="campaign_next_day">
+            ☀️ Next Day →
           </button>
-          <button id="btn-hold-election" class="btn btn-danger btn-lg" style="display:none;">
+          <button id="btn-end-week" class="btn btn-ghost btn-lg" style="margin-left:8px;" data-i18n="campaign_skip_week">
+            ⏩ Skip to Week End
+          </button>
+          <button id="btn-hold-election" class="btn btn-danger btn-lg" style="display:none;" data-i18n="campaign_hold_election">
             🗳️ Hold General Election
           </button>
         </div>
@@ -148,7 +185,7 @@
       <div class="dash-right">
         <div class="panel roster-panel">
           <div class="panel-head">
-            <h2><span class="hi">👔</span> MP Roster</h2>
+            <h2><span class="hi">👔</span> <span data-i18n="campaign_roster_title">MP Roster</span></h2>
             <span id="roster-count" class="badge">0 / 500</span>
           </div>
           <div class="roster-search">
@@ -254,11 +291,41 @@
     </div>
   </div>
 
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!-- PARLIAMENT DAY NOTIFICATION MODAL (NEW — Part 2)           -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <div id="parliament-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-box" style="max-width:460px;text-align:center;">
+      <div style="font-size:3rem;margin-bottom:8px;">🏛️</div>
+      <h2 style="color:var(--gold);margin-bottom:4px;" id="parl-modal-title">Parliament Day</h2>
+      <p style="color:var(--text2);margin-bottom:16px;font-size:.85rem;" id="parl-modal-desc">
+        Today is a Parliament session day. As an MP, you are expected to attend.
+        Ignoring Parliament will cost Political Capital and increase media scrutiny.
+      </p>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+        <button id="btn-enter-parliament" class="btn btn-gold btn-lg" style="flex:1;min-width:160px;">
+          🏛️ Enter Parliament
+        </button>
+        <button id="btn-ignore-parliament" class="btn btn-ghost btn-lg" style="flex:1;min-width:160px;">
+          🚫 Ignore (Penalty)
+        </button>
+      </div>
+      <p style="color:var(--text3);font-size:.7rem;margin-top:12px;" id="parl-modal-penalty">
+        Penalty for ignoring: -8 Political Capital, +3% Scrutiny
+      </p>
+    </div>
+  </div>
+
   <!-- Toast -->
   <div id="toast-container" class="toast-container"></div>
 
-  <!-- Scripts -->
+  <!-- Shared: Localization & Settings Engine -->
+  <script src="../shared/localization.js"></script>
+  <script src="../shared/settings.js"></script>
+
+  <!-- Scripts (timeline.js added for Part 2 — Unified Time Engine) -->
   <script src="data.js"></script>
+  <script src="timeline.js"></script>
   <script src="engine.js"></script>
   <script src="main.js"></script>
 </body>

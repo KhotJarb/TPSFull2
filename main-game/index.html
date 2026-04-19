@@ -19,21 +19,21 @@
     <div class="start-bg-pattern"></div>
     <div class="start-content">
       <div class="start-emblem">🇹🇭</div>
-      <h1 class="start-title">Thailand Political Simulation</h1>
-      <p class="start-subtitle">Navigate the most volatile democracy in Southeast Asia</p>
-      <p class="start-desc">
+      <h1 class="start-title" data-i18n="game_title">Thailand Political Simulation</h1>
+      <p class="start-subtitle" data-i18n="game_subtitle">Navigate the most volatile democracy in Southeast Asia</p>
+      <p class="start-desc" data-i18n="game_desc">
         You are the newly elected Prime Minister. Manage a fragile coalition, 
         survive crisis after crisis, and keep the generals in their barracks — 
         for 48 months. Can you complete your term?
       </p>
       <div class="start-buttons">
         <button id="btn-new-game" class="btn btn-primary btn-lg">
-          <span class="btn-icon">🏛️</span> New Game
+          <span class="btn-icon">🏛️</span> <span data-i18n="game_new">New Game</span>
         </button>
         <button id="btn-load-game" class="btn btn-secondary btn-lg" style="display:none;">
-          <span class="btn-icon">💾</span> Continue Saved Game
+          <span class="btn-icon">💾</span> <span data-i18n="game_continue">Continue Saved Game</span>
         </button>
-        <a href="../index.html" class="btn btn-ghost btn-md" style="margin-top:0.5rem;">
+        <a href="../index.html" class="btn btn-ghost btn-md" style="margin-top:0.5rem;" data-i18n="game_back">
           ← Back to Main Menu
         </a>
       </div>
@@ -72,7 +72,7 @@
       <div class="stat-card" id="stat-popularity">
         <div class="stat-icon">📊</div>
         <div class="stat-info">
-          <span class="stat-label">Approval Rating</span>
+          <span class="stat-label" data-i18n="game_approval">Approval Rating</span>
           <span class="stat-value" id="val-popularity">50%</span>
         </div>
         <div class="stat-bar-track">
@@ -82,7 +82,7 @@
       <div class="stat-card" id="stat-budget">
         <div class="stat-icon">💰</div>
         <div class="stat-info">
-          <span class="stat-label">National Budget</span>
+          <span class="stat-label" data-i18n="game_budget">National Budget</span>
           <span class="stat-value" id="val-budget">฿1,000B</span>
         </div>
         <div class="stat-bar-track">
@@ -92,7 +92,7 @@
       <div class="stat-card" id="stat-growth">
         <div class="stat-icon">📈</div>
         <div class="stat-info">
-          <span class="stat-label">GDP Growth</span>
+          <span class="stat-label" data-i18n="game_gdp">GDP Growth</span>
           <span class="stat-value" id="val-growth">3.2%</span>
         </div>
         <div class="stat-bar-track">
@@ -102,7 +102,7 @@
       <div class="stat-card" id="stat-unrest">
         <div class="stat-icon">⚠️</div>
         <div class="stat-info">
-          <span class="stat-label">Social Unrest</span>
+          <span class="stat-label" data-i18n="game_unrest">Social Unrest</span>
           <span class="stat-value" id="val-unrest">20%</span>
         </div>
         <div class="stat-bar-track">
@@ -112,7 +112,7 @@
       <div class="stat-card stat-hidden" id="stat-military">
         <div class="stat-icon">🎖️</div>
         <div class="stat-info">
-          <span class="stat-label">Military Patience</span>
+          <span class="stat-label" data-i18n="game_military">Military Patience</span>
           <span class="stat-value" id="val-military">70</span>
         </div>
         <div class="stat-bar-track">
@@ -128,7 +128,7 @@
       <aside id="sidebar-left" class="sidebar">
         <div class="sidebar-section">
           <h2 class="sidebar-heading">
-            <span class="heading-icon">🏛️</span> Parliament
+            <span class="heading-icon">🏛️</span> <span data-i18n="game_parliament">Parliament</span>
             <span id="coalition-seats-badge" class="seats-badge">358 / 500</span>
           </h2>
           <div id="parliament-chart" class="parliament-chart"></div>
@@ -137,7 +137,7 @@
 
         <div class="sidebar-section">
           <h2 class="sidebar-heading">
-            <span class="heading-icon">📋</span> Coalition Stability
+            <span class="heading-icon">📋</span> <span data-i18n="game_coalition_stab">Coalition Stability</span>
           </h2>
           <div class="coalition-meter">
             <div class="coalition-bar-track">
@@ -197,10 +197,10 @@
         <div id="idle-panel" class="idle-panel">
           <div class="idle-content">
             <div class="idle-icon">🏛️</div>
-            <h2>Government House</h2>
-            <p>Your coalition awaits your leadership, Prime Minister.</p>
+            <h2 data-i18n="game_gov_house">Government House</h2>
+            <p data-i18n="game_gov_desc">Your coalition awaits your leadership, Prime Minister.</p>
             <button id="btn-start-month" class="btn btn-primary btn-lg pulse-animation">
-              <span class="btn-icon">📰</span> Begin This Month
+              <span class="btn-icon">📰</span> <span data-i18n="game_begin_month">Begin This Month</span>
             </button>
           </div>
         </div>
@@ -232,14 +232,14 @@
       <aside id="sidebar-right" class="sidebar">
         <div class="sidebar-section">
           <h2 class="sidebar-heading">
-            <span class="heading-icon">📜</span> Legislation
+            <span class="heading-icon">📜</span> <span data-i18n="game_legislation">Legislation</span>
           </h2>
           <div id="laws-list" class="laws-list"></div>
         </div>
 
         <div class="sidebar-section">
           <h2 class="sidebar-heading">
-            <span class="heading-icon">📖</span> Event Log
+            <span class="heading-icon">📖</span> <span data-i18n="game_event_log">Event Log</span>
           </h2>
           <div id="event-log" class="event-log">
             <div class="log-empty">No events yet.</div>
@@ -299,6 +299,10 @@
 
   <!-- Notification Toast -->
   <div id="toast-container" class="toast-container"></div>
+
+  <!-- Shared: Localization & Settings Engine -->
+  <script src="../shared/localization.js"></script>
+  <script src="../shared/settings.js"></script>
 
   <!-- Scripts (order matters: data first, then engine, then main) -->
   <script src="data.js"></script>

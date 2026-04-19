@@ -1,225 +1,237 @@
-# 🏛️ Thailand Political Simulation (TPS)
+# 🏛️ Thailand Political Simulation (TPS) — Version 1.0.1 Test
 
-> **A browser-based political strategy game where you lead a Thai political party from election campaign to governing the Kingdom of Thailand.**
+> **An advanced political RPG and simulation focusing on the life of a Thai Member of Parliament, combining campaign strategy with deep parliamentary roleplay.**
 
-![Version](https://img.shields.io/badge/version-1.0-gold)
-![Tech](https://img.shields.io/badge/tech-HTML%2FCSS%2FJS%2FD3.js-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
-
----
-
-## 🎮 Overview
-
-Thailand Political Simulation is a deep, replayable political strategy game built entirely with **vanilla HTML5, CSS3, JavaScript, and D3.js** — zero dependencies, zero build tools, zero installation required. Deploy to GitHub Pages and play instantly.
-
-You will:
-1. **Choose a political party** from 5 fictionalized factions spanning Thailand's political spectrum
-2. **Campaign for 8 weeks** — hold rallies, run IO campaigns, deploy local boss networks (Ban Yai), and manage your 500-candidate roster
-3. **Win 251+ seats** out of 500 in a mixed-member election (400 constituency + 100 party-list)
-4. **Form a coalition government** by negotiating with rival parties who demand ministries and policy concessions
-5. **Govern Thailand** for a 48-month term — pass laws, handle crises, and maintain your parliamentary majority
+[![License: MIT](https://img.shields.io/badge/License-MIT-gold.svg)](#license)
+[![Version](https://img.shields.io/badge/Version-1.0.1_Test-blue.svg)](#)
+[![Platform](https://img.shields.io/badge/Platform-Browser_(Zero_Install)-green.svg)](#getting-started)
+[![Language](https://img.shields.io/badge/Language-🇬🇧_EN_|_🇹🇭_TH-orange.svg)](#localization)
 
 ---
 
-## 🎮 Play Now
+## 📖 Overview
 
-👉 **[Play Thailand Political Simulation](https://khotjarb.github.io/TPSFull/)**
+**Thailand Political Simulation (TPS)** is a standalone, browser-based political strategy game built entirely in vanilla JavaScript — no frameworks, no build tools, no installation required. Open `index.html` and play.
 
-No downloads. No installs. Just click and play.
+You begin as a rising political figure navigating the treacherous landscape of Thai politics. Lead your party through an 8-week national campaign, win seats in the House of Representatives, survive live parliamentary debates, and attempt to form a stable governing coalition — all while managing media scrutiny, military patience, and public approval.
 
----
+### 🎮 The Player Journey
 
-## 🚀 Quick Start
-
-### Play Locally
-
-No build step required. Just serve the files:
-
-```bash
-# Option 1: Node.js (built-in)
-npx -y http-server . -p 8080 -c-1
-
-# Option 2: Python
-python -m http.server 8080
-
-# Option 3: VS Code
-# Install "Live Server" extension → Right-click index.html → "Open with Live Server"
+```
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│  📢 CAMPAIGN    │     │  🏛️ PARLIAMENT   │     │  👔 GOVERNING   │
+│  MODULE         │────▶│  RPG MODULE      │────▶│  MODULE         │
+│                 │     │                  │     │                 │
+│ • Choose Party  │     │ • Live Debates   │     │ • Crisis Events │
+│ • 8-Week Race   │     │ • Point of Order │     │ • Propose Laws  │
+│ • Rallies & IO  │     │ • Vote on Bills  │     │ • Coalition Mgmt│
+│ • Election Day  │     │ • Interpellations│     │ • 48-Month Term │
+└─────────────────┘     └──────────────────┘     └─────────────────┘
 ```
 
-Then open **http://localhost:8080** in your browser.
+---
+
+## 🆕 New Features in v1.0.1 Test
+
+### 🌐 Shared Settings & Localization
+- **Universal TH/EN Support** — Every UI label, button, modal, and notification is fully bilingual. Switch languages at any time via the ⚙️ Settings gear or the header **EN / TH** toggle (Parliament module).
+- **Live Debate Speed Controls** — Adjust AI MP speaking speed (1×, 2×, 3×) in real-time without restarting the debate.
+- **Settings Persistence** — Language and speed preferences are saved in `localStorage` and survive page reloads, tab closes, and cross-module navigation.
+
+### 💾 Persistent Game State
+- **Seamless Module Transitions** — The game now remembers your campaign progress (Week, Day, Funds, Scrutiny, Poll Shares, Campaign Log) even after entering and returning from the Parliament module.
+- **Dual-Layer Persistence** — Campaign state is saved to both `localStorage` (survives browser restarts) and `sessionStorage` (fast same-tab restores) for maximum reliability.
+- **Wipe Save Data** — A single button in Settings clears all progress across all modules and routes the player back to the Campaign Party Select screen. Language preference is preserved.
+
+### 🏛️ Parliament RPG Module
+- **Immersive Live Debate Feed** — Watch AI MPs deliver speeches in real-time with a scrolling transcript, typing indicators, and party-colored dialogue bubbles.
+- **"Point of Order" (Protest) Mechanics** — Raise protests against AI speeches for slander, off-topic remarks, or misleading claims. The Speaker of the House rules on each protest with randomized outcomes that affect your Political Capital.
+- **Dynamic AI MP Dialogues** — Restructured dialogue templates with strict language separation. AI MPs speak purely in the player's chosen language — no more mixed Thai/English lines.
+- **Player Speech System** — Choose your stance (Aggressive, Technical, Diplomatic) when it's your turn to address the House. Each stance has different risk/reward profiles.
+
+### 📜 Legislative Depth
+- **Bill Initiation Process** — Propose bills that require collecting signatures from other MPs. Costs Influence points and consumes a bill slot.
+- **Committee Phase** — Each bill goes through a committee review where you choose between NGO experts (ethical, slower) and lobbyists (fast, risky). Your choice permanently affects the bill's outcome and your reputation.
+- **Parliamentary Voting** — After debates conclude, cast your vote (Aye, Nay, Abstain) and watch the full party-by-party breakdown of the tally.
+
+### ⚖️ Permanent Difficulty System
+- **"Choose Once" Design** — Select Easy, Normal, or Hard at the start of your campaign. The choice is locked permanently and cannot be changed mid-playthrough.
+- **Difficulty Scaling** — Affects action costs, scrutiny gains, fundraise returns, AI campaign intensity, lobbyist event frequency, and election math. Hard mode is genuinely punishing.
+
+---
+
+## 🐛 Bug Fixes in v1.0.1
+
+| Bug | Resolution |
+|---|---|
+| UI resetting to Party Select when changing languages | Implemented `localStorage`-based UI state persistence (`campaign_ui_state`, `maingame_ui_state`) that survives page reloads |
+| Campaign Timeline reset (Week/Day/Stats) when returning from Parliament | Added `saveCampaignState()` / `loadCampaignState()` with `localStorage` persistence. State is saved before parliament navigation and restored on return |
+| Mixed language (Thai/English) dialogues on "The Floor" | Restructured `DIALOGUE_TEMPLATES`, `SPEAKER_PROCEDURAL_LINES`, and `PLAYER_SPEECH_LINES` into bilingual `{ en: [...], th: [...] }` objects with `_getDebateLang()` as single source of truth |
+| Wipe Save Data not routing to initial screen | Changed redirect from `location.reload()` to `window.location.href = '../campaign/index.html'` with full `localStorage.clear()` + `sessionStorage.clear()` |
+| Main Game dashboard resetting on language change | Added `maingame_ui_state` flag with clear paths on quit, restart, and game over |
+| Settings modal not updating when language changed externally | Added `tpsLangChanged` event listener that rebuilds the entire modal HTML in the new language |
 
 ---
 
 ## 📁 Project Structure
 
 ```
-TPSREAL/
-├── index.html              ← 🏠 Main Menu (entry point)
-├── style.css               ← 🎨 Main menu styles
-├── README.md               ← 📖 This file
+TPSFull/
+├── index.html                  # Landing page / module hub
+├── README.md                   # This file
 │
-├── campaign/               ← 🗳️ Election Campaign Module
-│   ├── index.html          ← Campaign UI (5 game screens)
-│   ├── style.css           ← Campaign dashboard styles
-│   ├── data.js             ← Parties, provinces, MP generation, map data
-│   ├── engine.js           ← Election math, coalition logic, win/loss loop
-│   └── main.js             ← UI binding, D3.js map, roster editor
+├── campaign/                   # 📢 Election Campaign Module
+│   ├── index.html              #   Party Select → Dashboard → Election
+│   ├── style.css               #   Dark theme with gold accents
+│   ├── data.js                 #   Parties, constituencies, state schema
+│   ├── engine.js               #   Election math, actions, save/load
+│   ├── timeline.js             #   Daily calendar, parliament bridging
+│   └── main.js                 #   UI bindings, boot sequence
 │
-└── main-game/              ← 🏛️ Governing Module
-    ├── index.html          ← Government dashboard UI
-    ├── style.css           ← Dashboard styles
-    ├── data.js             ← Laws, crises, coalition data
-    ├── engine.js           ← Governing game logic
-    ├── main.js             ← UI binding & game loop
-    └── README.md           ← Module-specific docs
+├── parliament-test/            # 🏛️ Parliament RPG Module
+│   ├── index.html              #   Three-pane dashboard layout
+│   ├── style.css               #   Bloomberg Terminal aesthetics
+│   ├── data.js                 #   MPs, topics, state management
+│   ├── timeline.js             #   Weekly schedule engine
+│   ├── debate.js               #   Live debate engine, AI speeches
+│   ├── engine.js               #   Extended resources, interpellations
+│   ├── legislation.js          #   Bill system, committee phase
+│   └── main.js                 #   UI orchestration, callbacks
+│
+├── main-game/                  # 👔 Governing Simulation Module
+│   ├── index.html              #   Start → Dashboard → Game Over
+│   ├── style.css               #   Governing dashboard theme
+│   ├── data.js                 #   Parties, laws, crisis events
+│   └── main.js                 #   Game loop, UI, save/load
+│
+└── shared/                     # 🔧 Cross-Module Utilities
+    ├── localization.js          #   i18n engine, translation dictionary
+    └── settings.js              #   Settings modal, global state, wipe
 ```
 
-## 🗳️ Game Mechanics
+---
 
-### Election System (Campaign Module)
+## 🚀 Getting Started
 
-| Mechanic | Details |
-|----------|---------|
-| **Constituency Seats** | 400 seats across 77 provinces. First Past the Post — highest score wins. |
-| **Party-List Seats** | 100 seats allocated nationally via the Largest Remainder Method. |
-| **Majority Threshold** | **251 seats** out of 500 to form a government. |
-| **Campaign Duration** | 8 weeks with 3 action points per week. |
+### Prerequisites
+- A modern web browser (Chrome, Firefox, Edge, Safari)
+- That's it. No Node.js, no npm, no build tools.
 
-### Campaign Actions
+### Running Locally
 
-| Action | Cost | Effect |
-|--------|------|--------|
-| 🎤 **Hold Rally** | 50M฿ + 1 AP | Boosts all districts in a province |
-| 📱 **IO Campaign** | 80M฿ + 1 AP | Social media blitz across an entire region |
-| 🏘️ **Deploy Ban Yai** | 120M฿ + 1 AP | Local boss network secures a district — but costs party-list votes |
-| 💰 **Fundraise** | 1 AP | Raises 100-250M฿ at the cost of increased scrutiny |
+**Option A — Direct File Open:**
+```
+Double-click campaign/index.html
+```
 
-### The Ban Yai Trade-off
+**Option B — Local HTTP Server (recommended for cross-module navigation):**
+```bash
+# Using Python
+python -m http.server 8080
 
-**Ban Yai** (บ้านใหญ่) represents influential local families who can deliver votes through patronage networks. Using Ban Yai:
-- ✅ **Adds** a large bonus to constituency seat scores (almost guarantees winning that district)
-- ❌ **Subtracts** from your national party-list vote tally (corrupt tactics alienate ideological voters)
-- ❌ **Increases** media scrutiny (risk of election commission investigation)
+# Using Node.js
+npx http-server . -p 8080
 
-This mechanic forces the player to balance *dirty local politics* against *national ideological appeal* — a core tension in real Thai elections.
+# Then open http://localhost:8080/campaign/index.html
+```
 
-### The 5 Political Parties
-
-| Party | Ideology | Strengths | Weaknesses |
-|-------|----------|-----------|------------|
-| **Khana Pracharat (KPR)** | Progressive | IO + Urban + Youth | Low Ban Yai, Low Funds |
-| **Pracha Niyom (PNP)** | Populist | Isan dominance + Rural machine | Low IO strength |
-| **Palang Ratthaniyom (PRP)** | Royalist | Unlimited funds + Military backing | Very low popularity |
-| **Setthakij Thai (STK)** | Centrist | Ban Yai masters + Kingmaker | Low base popularity |
-| **Pak Tai Ruamjai (PTR)** | Regional | Southern stronghold | Only viable in the South |
-
-### Coalition Formation
-
-After the election, you enter the **Coalition Phase**:
-- AI parties evaluate your offer based on **ideology compatibility**, **seat ratios**, and whether you're the largest party
-- They demand **ministries** proportional to their seat contribution (from 18 available ministries)
-- They may impose **policy conditions** (e.g., "No constitutional reform", "Implement rural subsidies")
-- There's a **willingness roll** — even a 70% willing party might refuse you
-
-### Win / Loss Loop
-
-| Outcome | Trigger | What Happens |
-|---------|---------|--------------|
-| 🏛️ **Victory** | Coalition ≥ 251 seats | Election data saved to `sessionStorage` → redirect to `/main-game/` |
-| 📉 **Opposition** | Coalition < 251 seats | Fast-forward 4 years → New election cycle → Campaign restarts at Week 1 |
+**Option C — GitHub Pages:**
+Push the entire `TPSFull/` directory to a GitHub repo and enable Pages. Zero configuration needed.
 
 ---
 
-## 🏛️ Governing Module
+## 🎯 How to Play
 
-Once you win the election, you enter the **Governing Module** where you must:
+### Campaign Module (`/campaign/`)
+1. **Choose Your Party** — Select from 5 Thai political parties, each with unique strengths, ideologies, and regional bases.
+2. **Set Difficulty** — Easy, Normal, or Hard. This choice is permanent.
+3. **Campaign for 8 Weeks** — Each day brings new choices:
+   - **Rally** — Boost regional support (costs funds, increases scrutiny)
+   - **Information Operations** — Social media campaigns (cheaper, riskier)
+   - **Ban Yai Network** — Activate local power brokers (high cost, high reward)
+   - **Fundraise** — Replenish campaign war chest
+4. **Parliament Days** (Wed/Thu/Fri) — Choose to enter the Parliament module for debates or skip (scrutiny penalty).
+5. **Election Day** — After 56 days, the constituency + party-list election determines seat allocation.
+6. **Form a Coalition** — Negotiate with other parties to reach the 251-seat majority threshold.
 
-- **Pass legislation** through your coalition (vote whipping, compromise)
-- **Handle crises** (protests, economic downturns, constitutional court challenges)
-- **Maintain coalition stability** (partners may defect if their demands aren't met)
-- **Survive 48 months** without dissolution or a no-confidence vote
+### Parliament Module (`/parliament-test/`)
+1. **Begin Session** — A random bill is selected for debate.
+2. **Watch the Debate** — AI MPs deliver speeches for and against the bill.
+3. **Raise Protests** — If an MP says something objectionable, raise a "Point of Order" (slander, off-topic, misleading).
+4. **Deliver Your Speech** — Choose your stance when called upon.
+5. **Cast Your Vote** — Aye, Nay, or Abstain on the final bill.
 
----
-
-## 🗺️ Map & Data
-
-### Province Coverage
-- **77 provinces** with official English names (e.g., "Nakhon Ratchasima", not "Korat")
-- **400 electoral districts** generated from province data with randomized political leans
-- **7 regions**: Bangkok Metropolitan, Central, North, Northeast (Isan), East, West, South
-
-### D3.js Map
-The campaign dashboard features an interactive D3.js map of Thailand:
-- Province boundaries rendered from GeoJSON
-- Color-coded by leading political party
-- Hover tooltips showing district count, population, and leading party
-- Click-to-select provinces for rally targeting
-
----
-
-## 🎨 Design System
-
-| Token | Value | Usage |
-|-------|-------|-------|
-| `--bg` | `#060a16` | Primary background |
-| `--bg2` | `#0a0e1a` | Secondary background |
-| `--gold` | `#d4af37` | Accent / Thai Gold |
-| `--gold-l` | `#f5d778` | Light gold |
-| `--text` | `#e8eaf0` | Primary text |
-| `--text2` | `#9ba3b8` | Secondary text |
-| Font Display | Cinzel | Titles & headings |
-| Font Body | Inter | UI text |
-| Font Thai | Noto Sans Thai | Thai language text |
+### Governing Module (`/main-game/`)
+1. **Survive 48 Months** — Each month brings a crisis event requiring a difficult choice.
+2. **Manage 6 Stats** — Approval, Budget, Growth, Unrest, Military Patience, Coalition Stability.
+3. **Propose Laws** — Navigate parliamentary voting to pass or repeal legislation.
+4. **Avoid Game Over** — Unrest at 100%, budget bankruptcy, military coup, or coalition collapse all end your term.
 
 ---
 
-## 🛠️ Tech Stack
+## 🌍 Localization
 
-| Technology | Purpose |
-|------------|---------|
-| **HTML5** | Semantic structure |
-| **CSS3** | Custom properties, glassmorphism, grid, animations |
-| **Vanilla JS** | Game engine, UI binding, state management |
-| **D3.js v7** | Thailand electoral map (GeoJSON rendering) |
-| **DiceBear API** | Procedural avatar generation for 2,500 MPs |
+TPS supports full bilingual operation:
 
-**Zero build tools. Zero package.json. Zero node_modules.**
+| Feature | English (EN) | Thai (TH) |
+|---|---|---|
+| All UI labels | ✅ | ✅ |
+| Settings modal | ✅ | ✅ |
+| Debate dialogues | ✅ | ✅ |
+| Crisis events | ✅ | ✅ |
+| Toast notifications | ✅ | ✅ |
+| Confirmation prompts | ✅ | ✅ |
+
+Switch languages via:
+- ⚙️ **Settings Gear** (bottom-right, all pages)
+- 🔤 **EN / TH Toggle** (Parliament header bar)
 
 ---
 
-## 📊 Data Scale
+## 🔧 Technical Notes
 
-| Entity | Count |
-|--------|-------|
-| Political Parties | 5 |
-| Provinces | 77 |
-| Electoral Districts | 400 |
-| Total Seats | 500 (400 constituency + 100 party-list) |
-| MPs Generated | 2,500 (500 per party) |
-| Thai First Names | 136 (72 male + 64 female) |
-| Thai Last Names | 80 |
-| Ministries | 18 |
-| Governing Laws | ~20+ |
-| Crisis Events | ~15+ |
+- **Zero Dependencies** — Pure vanilla HTML/CSS/JavaScript. No React, no Vue, no Tailwind.
+- **No Build Step** — Open and play. No `npm install`, no webpack, no compilation.
+- **State Management** — `localStorage` for persistent state, `sessionStorage` for tab-scoped snapshots.
+- **D3.js** — Used only in the Campaign module for the interactive electoral map.
+- **Modular Architecture** — Each module (`/campaign/`, `/parliament-test/`, `/main-game/`) is self-contained with its own `data.js` → `engine.js` → `main.js` pipeline.
+- **Shared Layer** — `/shared/localization.js` and `/shared/settings.js` are loaded by all modules for consistent i18n and user preferences.
+
+---
+
+## 📜 Changelog
+
+### v1.0.1 Test (April 2026)
+- Added: Universal TH/EN localization system
+- Added: Settings modal with language, debate speed, difficulty display
+- Added: Parliament RPG module with live debate, protests, voting
+- Added: Legislative depth (bill proposals, committee phase)
+- Added: Persistent campaign state across module transitions
+- Added: Permanent difficulty system (Easy/Normal/Hard)
+- Added: Parliament header EN/TH toggle button
+- Fixed: UI state reset on language change (campaign + main game)
+- Fixed: Campaign timeline amnesia after parliament return
+- Fixed: Mixed-language debate dialogues
+- Fixed: Wipe Save Data routing
+
+### v1.0.0 (March 2026)
+- Initial release: Campaign module, Main Game module
+- Basic party system with 5 Thai political parties
+- 400-constituency + 100-party-list election engine
+- 48-month governing simulation with crisis events
 
 ---
 
 ## 📄 License
 
-MIT License — Free to use, modify, and distribute.
+This project is released under the **MIT License**.
 
----
-
-## 🙏 Credits
-
-- **Map Data**: [thailand.json](https://github.com/apisit/thailand.json) by apisit
-- **Avatars**: [DiceBear](https://www.dicebear.com/) Personas collection
-- **Fonts**: [Google Fonts](https://fonts.google.com/) — Inter, Cinzel, Noto Sans Thai
-- **D3.js**: [d3js.org](https://d3js.org/)
+Built with 🇹🇭 by the TPS Development Team.
 
 ---
 
 <p align="center">
-  <strong>TPS v1.0 — 2027 Election Cycle</strong><br>
-  <em>A browser-based political strategy experience</em>
+  <strong>🏛️ Thailand Political Simulation — สถาบันจำลองการเมืองไทย</strong><br>
+  <em>"ในการเมือง ไม่มีมิตรแท้ ไม่มีศัตรู์ถาวร มีแต่ผลประโยชน์ร่วม"</em><br>
+  <sub>"In politics, there are no permanent friends, no permanent enemies — only permanent interests."</sub>
 </p>

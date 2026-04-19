@@ -9,6 +9,27 @@
 
 function clampVal(v, min, max) { return Math.max(min, Math.min(max, v)); }
 
+/**
+ * getDiffScale() — Returns difficulty multipliers from TPSGlobalState.
+ * All game mechanics reference this to adjust costs, gains, and AI behavior.
+ *
+ *   costMult:     Multiplies action costs (rally/IO/banYai)
+ *   scrutinyMult: Multiplies scrutiny gains on player actions
+ *   fundsReturnMult: Multiplies fundraise returns
+ *   aiIntensity:  Multiplies AI campaign target count
+ *   lobbyChanceMult: Multiplies lobbyist event trigger %
+ *   electionScrutinyMult: Scrutiny penalty amplifier in election math
+ */
+function getDiffScale() {
+  const d = (typeof TPSGlobalState !== 'undefined') ? TPSGlobalState.difficulty : 'normal';
+  const scales = {
+    easy:   { costMult: 0.75, scrutinyMult: 0.6,  fundsReturnMult: 1.4, aiIntensity: 0.7, lobbyChanceMult: 0.7, electionScrutinyMult: 0.5 },
+    normal: { costMult: 1.0,  scrutinyMult: 1.0,  fundsReturnMult: 1.0, aiIntensity: 1.0, lobbyChanceMult: 1.0, electionScrutinyMult: 1.0 },
+    hard:   { costMult: 1.35, scrutinyMult: 1.6,  fundsReturnMult: 0.7, aiIntensity: 1.5, lobbyChanceMult: 1.5, electionScrutinyMult: 1.8 }
+  };
+  return scales[d] || scales.normal;
+}
+
 function shuffleArray(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -54,11 +75,13 @@ function advanceWeek() {
  * AI parties run their campaign activities each week
  */
 function runAICampaigns() {
+  const ds = getDiffScale();
   CAMPAIGN_PARTIES.forEach(party => {
     if (party.id === campaignState.playerPartyId) return;
 
     // AI picks random districts weighted by their regional strength
-    const targetCount = 3 + Math.floor(Math.random() * 5);
+    // Difficulty scales AI aggressiveness: more targets on hard
+    const targetCount = Math.round((3 + Math.floor(Math.random() * 5)) * ds.aiIntensity);
     const shuffled = shuffleArray(DISTRICTS);
 
     for (let i = 0; i < Math.min(targetCount, shuffled.length); i++) {
@@ -108,7 +131,8 @@ function applyPollDrift() {
  */
 function actionRally(provinceId) {
   if (campaignState.actionPointsRemaining <= 0) return { success: false, message: "No action points remaining." };
-  const cost = 50;
+  const ds = getDiffScale();
+  const cost = Math.round(50 * ds.costMult);
   if (campaignState.playerFunds < cost) return { success: false, message: "Insufficient funds." };
 
   const dists = getDistrictsByProvince(provinceId);
@@ -116,21 +140,29 @@ function actionRally(provinceId) {
 
   campaignState.playerFunds -= cost;
   campaignState.actionPointsRemaining--;
-  campaignState.playerScrutiny = Math.min(100, campaignState.playerScrutiny + 1);
+  const scrutinyGain = Math.round(1 * ds.scrutinyMult);
+  campaignState.playerScrutiny = Math.min(100, campaignState.playerScrutiny + scrutinyGain);
 
-  const buff = 8 + Math.random() * 7;
+  // DIMINISHING RETURNS: effectiveness drops with repeated visits
+  // First visit = full buff, subsequent visits lose 15% each time
+  const avgVisits = dists.reduce((sum, d) => sum + d.visitCount, 0) / dists.length;
+  const diminishFactor = Math.max(0.25, 1 - (avgVisits * 0.15));
+  const baseBuff = 8 + Math.random() * 7;
+  const buff = baseBuff * diminishFactor;
+
   dists.forEach(d => {
     d.campaignBuffs.rally += buff;
     d.visitCount++;
   });
 
   const prov = getProvinceById(provinceId);
+  const diminishNote = diminishFactor < 0.85 ? ` (diminished: ×${diminishFactor.toFixed(2)})` : '';
   campaignState.campaignLog.push({
     week: campaignState.currentWeek, type: "rally",
-    message: `Held rally in ${prov.name} (+${buff.toFixed(1)} rally buff to ${dists.length} districts)`
+    message: `Held rally in ${prov.name} (+${buff.toFixed(1)} buff to ${dists.length} districts, cost ฿${cost}M)${diminishNote}`
   });
 
-  return { success: true, buff, districts: dists.length, province: prov.name };
+  return { success: true, buff, districts: dists.length, province: prov.name, diminishFactor };
 }
 
 /**
@@ -138,7 +170,8 @@ function actionRally(provinceId) {
  */
 function actionIO(region) {
   if (campaignState.actionPointsRemaining <= 0) return { success: false, message: "No action points remaining." };
-  const cost = 80;
+  const ds = getDiffScale();
+  const cost = Math.round(80 * ds.costMult);
   if (campaignState.playerFunds < cost) return { success: false, message: "Insufficient funds." };
 
   const dists = getDistrictsByRegion(region);
@@ -146,20 +179,29 @@ function actionIO(region) {
 
   campaignState.playerFunds -= cost;
   campaignState.actionPointsRemaining--;
-  campaignState.playerScrutiny = Math.min(100, campaignState.playerScrutiny + 5);
+  const scrutinyGain = Math.round(5 * ds.scrutinyMult);
+  campaignState.playerScrutiny = Math.min(100, campaignState.playerScrutiny + scrutinyGain);
 
   const party = CAMPAIGN_PARTIES.find(p => p.id === campaignState.playerPartyId);
   const ioMult = (party.ioStrength || 20) / 30;
-  const buff = (5 + Math.random() * 5) * ioMult;
+
+  // DIMINISHING RETURNS: IO is less effective at high scrutiny
+  // Above 40% scrutiny, IO effectiveness drops as media catches on
+  const scrutinyPenalty = campaignState.playerScrutiny > 40
+    ? Math.max(0.3, 1 - ((campaignState.playerScrutiny - 40) / 100))
+    : 1;
+  const baseBuff = (5 + Math.random() * 5) * ioMult;
+  const buff = baseBuff * scrutinyPenalty;
 
   dists.forEach(d => { d.campaignBuffs.io += buff; });
 
+  const diminishNote = scrutinyPenalty < 0.95 ? ` (scrutiny penalty: ×${scrutinyPenalty.toFixed(2)})` : '';
   campaignState.campaignLog.push({
     week: campaignState.currentWeek, type: "io",
-    message: `IO campaign in ${REGIONS[region]} (+${buff.toFixed(1)} IO buff, scrutiny +5)`
+    message: `IO campaign in ${REGIONS[region]} (+${buff.toFixed(1)} IO buff, scrutiny +${scrutinyGain}, cost ฿${cost}M)${diminishNote}`
   });
 
-  return { success: true, buff, districts: dists.length, region: REGIONS[region] };
+  return { success: true, buff, districts: dists.length, region: REGIONS[region], scrutinyPenalty };
 }
 
 /**
@@ -168,7 +210,8 @@ function actionIO(region) {
  */
 function actionBanYai(districtId) {
   if (campaignState.actionPointsRemaining <= 0) return { success: false, message: "No action points remaining." };
-  const cost = 120;
+  const ds = getDiffScale();
+  const cost = Math.round(120 * ds.costMult);
   if (campaignState.playerFunds < cost) return { success: false, message: "Insufficient funds." };
 
   const dist = getDistrictById(districtId);
@@ -176,7 +219,8 @@ function actionBanYai(districtId) {
 
   campaignState.playerFunds -= cost;
   campaignState.actionPointsRemaining--;
-  campaignState.playerScrutiny = Math.min(100, campaignState.playerScrutiny + 10);
+  const scrutinyGain = Math.round(10 * ds.scrutinyMult);
+  campaignState.playerScrutiny = Math.min(100, campaignState.playerScrutiny + scrutinyGain);
 
   const bonus = 25 + Math.random() * 15;
   dist.banYaiBonus += bonus;
@@ -184,7 +228,7 @@ function actionBanYai(districtId) {
 
   campaignState.campaignLog.push({
     week: campaignState.currentWeek, type: "ban_yai",
-    message: `Deployed Ban Yai in ${dist.displayName} (+${bonus.toFixed(0)} bonus, scrutiny +10)`
+    message: `Deployed Ban Yai in ${dist.displayName} (+${bonus.toFixed(0)} bonus, scrutiny +${scrutinyGain}, cost ฿${cost}M)`
   });
 
   return { success: true, bonus, district: dist.displayName };
@@ -196,17 +240,148 @@ function actionBanYai(districtId) {
 function actionFundraise() {
   if (campaignState.actionPointsRemaining <= 0) return { success: false, message: "No action points remaining." };
 
-  const amount = 100 + Math.floor(Math.random() * 150);
+  const ds = getDiffScale();
+  const amount = Math.round((100 + Math.floor(Math.random() * 150)) * ds.fundsReturnMult);
   campaignState.playerFunds += amount;
   campaignState.actionPointsRemaining--;
-  campaignState.playerScrutiny = Math.min(100, campaignState.playerScrutiny + 2);
+  const scrutinyGain = Math.round(2 * ds.scrutinyMult);
+  campaignState.playerScrutiny = Math.min(100, campaignState.playerScrutiny + scrutinyGain);
 
   campaignState.campaignLog.push({
     week: campaignState.currentWeek, type: "fundraise",
-    message: `Fundraising event raised ฿${amount}M (scrutiny +2)`
+    message: `Fundraising event raised ฿${amount}M (scrutiny +${scrutinyGain})`
   });
 
   return { success: true, amount };
+}
+
+
+// ── Lobbyist Random Events (NEW — Part 2) ────────────────────────
+
+/**
+ * LOBBYIST_EVENTS — Random events that can trigger each day.
+ * Lobbyists offer deals: funds in exchange for scrutiny, or
+ * opportunities that cost money but reduce scrutiny.
+ */
+const LOBBYIST_EVENTS = [
+  {
+    id: "tycoon_donation",
+    title: "🏗️ Tycoon Donation Offer",
+    description: "A real estate mogul offers a generous campaign donation. The media may notice.",
+    choices: [
+      { label: "Accept the donation", effects: { funds: 200, scrutiny: 8 }, risk: "High scrutiny" },
+      { label: "Decline politely", effects: { funds: 0, scrutiny: -2 }, risk: "None" }
+    ]
+  },
+  {
+    id: "media_interview",
+    title: "📺 Prime-Time Interview Invitation",
+    description: "A major TV network offers a live interview slot. Great exposure, but risky.",
+    choices: [
+      { label: "Accept the interview", effects: { pollBoost: 3, scrutiny: 5 }, risk: "Scrutiny increase" },
+      { label: "Send a deputy instead", effects: { pollBoost: 1, scrutiny: 0 }, risk: "Smaller impact" }
+    ]
+  },
+  {
+    id: "grassroots_surge",
+    title: "✊ Grassroots Volunteer Surge",
+    description: "A wave of enthusiastic volunteers offers to help your campaign for free.",
+    choices: [
+      { label: "Deploy them in key provinces", effects: { rallyBoost: 12, funds: -20 }, risk: "Small cost" },
+      { label: "Hold a coordinated rally", effects: { rallyBoost: 8, scrutiny: 2 }, risk: "Media attention" }
+    ]
+  },
+  {
+    id: "scandal_rumor",
+    title: "⚠️ Opposition Scandal Leak",
+    description: "An informant offers evidence of corruption in a rival party. Using it is risky.",
+    choices: [
+      { label: "Leak it to the press", effects: { rivalPenalty: 5, scrutiny: 10 }, risk: "Extreme scrutiny" },
+      { label: "File it for later", effects: { scrutiny: 0 }, risk: "None" }
+    ]
+  },
+  {
+    id: "ec_warning",
+    title: "🔍 EC Compliance Warning",
+    description: "The Election Commission flags irregularities in your finance reports.",
+    choices: [
+      { label: "Hire forensic accountants", effects: { funds: -80, scrutiny: -10 }, risk: "Costly" },
+      { label: "Ignore and hope for the best", effects: { scrutiny: 15 }, risk: "Very high scrutiny" }
+    ]
+  }
+];
+
+/**
+ * rollLobbyistEvent() — Called each day. Has a chance to trigger
+ * a random lobbyist event.
+ *
+ * @param {number} triggerChance — % chance per day (default: 20%)
+ * @returns {Object|null} Event object if triggered, null otherwise
+ */
+function rollLobbyistEvent(triggerChance = 20) {
+  const ds = getDiffScale();
+  const adjustedChance = triggerChance * ds.lobbyChanceMult;
+  if (Math.random() * 100 > adjustedChance) return null;
+
+  const event = LOBBYIST_EVENTS[Math.floor(Math.random() * LOBBYIST_EVENTS.length)];
+  console.log(`[campaign/engine.js] Lobbyist event triggered: ${event.title} (chance: ${adjustedChance.toFixed(0)}%)`);
+  return { ...event };
+}
+
+/**
+ * applyLobbyistChoice() — Applies the effects of a lobbyist event choice.
+ *
+ * @param {Object} choice — The choice object from LOBBYIST_EVENTS
+ * @returns {Object} Result with applied effects
+ */
+function applyLobbyistChoice(choice) {
+  if (!choice || !choice.effects) return { error: "Invalid choice." };
+
+  const effects = choice.effects;
+  const results = {};
+
+  if (effects.funds) {
+    campaignState.playerFunds += effects.funds;
+    results.funds = effects.funds;
+  }
+  if (effects.scrutiny) {
+    campaignState.playerScrutiny = clampVal(campaignState.playerScrutiny + effects.scrutiny, 0, 100);
+    results.scrutiny = effects.scrutiny;
+  }
+  if (effects.pollBoost) {
+    // Boost player's national poll share
+    const pid = campaignState.playerPartyId;
+    campaignState.nationalPollShare[pid] = Math.min(50,
+      (campaignState.nationalPollShare[pid] || 20) + effects.pollBoost);
+    results.pollBoost = effects.pollBoost;
+  }
+  if (effects.rallyBoost) {
+    // Apply rally boost to random districts
+    const shuffled = shuffleArray(DISTRICTS);
+    const count = Math.min(10, shuffled.length);
+    for (let i = 0; i < count; i++) {
+      shuffled[i].campaignBuffs.rally += effects.rallyBoost;
+    }
+    results.rallyBoost = effects.rallyBoost;
+  }
+  if (effects.rivalPenalty) {
+    // Reduce a random rival's poll share
+    const rivals = CAMPAIGN_PARTIES.filter(p => p.id !== campaignState.playerPartyId);
+    const target = rivals[Math.floor(Math.random() * rivals.length)];
+    if (target) {
+      campaignState.nationalPollShare[target.id] = Math.max(3,
+        (campaignState.nationalPollShare[target.id] || 15) - effects.rivalPenalty);
+      results.rivalPenalty = { target: target.shortName, amount: effects.rivalPenalty };
+    }
+  }
+
+  campaignState.campaignLog.push({
+    week: campaignState.currentWeek,
+    type: "lobbyist",
+    message: `Event: ${choice.label} — ${JSON.stringify(results)}`
+  });
+
+  return { success: true, applied: results };
 }
 
 
@@ -295,9 +470,10 @@ function runElection() {
       // 7. Random variance (election uncertainty, ±8)
       score += (Math.random() - 0.5) * 16;
 
-      // 8. Scrutiny penalty (only for player)
+      // 8. Scrutiny penalty (only for player) — amplified by difficulty
       if (party.id === campaignState.playerPartyId) {
-        score -= campaignState.playerScrutiny * 0.1;
+        const _ds = getDiffScale();
+        score -= campaignState.playerScrutiny * 0.1 * _ds.electionScrutinyMult;
       }
 
       scores[party.id] = Math.max(0, score);
@@ -759,7 +935,114 @@ function getDistrictsWonByParty(partyId) {
 }
 
 
+
+// ═══════════════════════════════════════════════════════════════════
+// STEP 3 FIX: PERSISTENT CAMPAIGN SAVE/LOAD
+// Uses localStorage (survives tab closes) instead of sessionStorage alone.
+// Ensures campaign timeline + stats survive parliament round-trips.
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * saveCampaignState() — Bundles ALL campaign variables into a single
+ * JSON object and saves to localStorage.
+ *
+ * MUST be called:
+ *   - Before navigating to /parliament-test/
+ *   - After each state-changing action (rally, next day, etc.)
+ *   - On any dashboard render (via _saveCampaignToStorage in main.js)
+ */
+function saveCampaignState() {
+  if (!campaignState) {
+    console.warn('[campaign/engine.js] No campaignState to save.');
+    return;
+  }
+
+  try {
+    const saveData = {
+      // Full campaign state (deep copy to avoid reference issues)
+      state: JSON.parse(JSON.stringify(campaignState)),
+
+      // Calendar position (CampaignCalendar is a separate object)
+      calendarDay: (typeof CampaignCalendar !== 'undefined') ? CampaignCalendar.currentDay : 1,
+
+      // Player selections (needed to rebuild UI)
+      playerPartyId: campaignState.playerPartyId,
+      difficulty: (typeof TPSGlobalState !== 'undefined') ? TPSGlobalState.difficulty : 'normal',
+
+      // Timestamp for debugging
+      savedAt: Date.now()
+    };
+
+    localStorage.setItem('tps_campaign_save', JSON.stringify(saveData));
+    console.log(`[campaign/engine.js] Campaign saved — Day ${saveData.calendarDay}, Week ${campaignState.currentWeek}, Funds ${campaignState.playerFunds}`);
+  } catch (e) {
+    console.warn('[campaign/engine.js] Could not save campaign state:', e);
+  }
+}
+
+/**
+ * loadCampaignState() — Restores campaign progress from localStorage.
+ * Must be called during boot IF the player is returning to the dashboard.
+ *
+ * FLOW:
+ *   1. Reads 'tps_campaign_save' from localStorage
+ *   2. If valid, calls initCampaignState() with the saved partyId
+ *   3. Overwrites the fresh state with the saved state
+ *   4. Restores CampaignCalendar.currentDay
+ *   5. Returns true if restore succeeded
+ *
+ * @returns {boolean} true if state was restored
+ */
+function loadCampaignState() {
+  try {
+    const raw = localStorage.getItem('tps_campaign_save');
+    if (!raw) {
+      console.log('[campaign/engine.js] No saved campaign data in localStorage.');
+      return false;
+    }
+
+    const saveData = JSON.parse(raw);
+    if (!saveData.state || !saveData.playerPartyId) {
+      console.warn('[campaign/engine.js] Saved data is incomplete — ignoring.');
+      return false;
+    }
+
+    // 1. Initialize with the saved party (builds MP roster, sets defaults)
+    initCampaignState(saveData.playerPartyId);
+
+    // 2. Overwrite with saved state (funds, scrutiny, poll shares, log, etc.)
+    Object.assign(campaignState, saveData.state);
+
+    // 3. Restore calendar day
+    if (typeof CampaignCalendar !== 'undefined' && saveData.calendarDay) {
+      CampaignCalendar.currentDay = saveData.calendarDay;
+    }
+
+    // 4. Restore difficulty
+    if (saveData.difficulty && typeof TPSGlobalState !== 'undefined') {
+      TPSGlobalState.difficulty = saveData.difficulty;
+    }
+
+    console.log(`[campaign/engine.js] Campaign loaded — Day ${saveData.calendarDay}, Week ${campaignState.currentWeek}, Funds ${campaignState.playerFunds}`);
+    return true;
+  } catch (e) {
+    console.warn('[campaign/engine.js] Could not load campaign state:', e);
+    return false;
+  }
+}
+
+/**
+ * clearCampaignSave() — Removes the persistent save from localStorage.
+ * Call on: game over, election held, or explicit wipe.
+ */
+function clearCampaignSave() {
+  localStorage.removeItem('tps_campaign_save');
+  console.log('[campaign/engine.js] Campaign save cleared.');
+}
+
+
 console.log("[campaign/engine.js] Loaded successfully.");
 console.log("  → Election engine ready (400 constituency + 100 party-list)");
 console.log("  → Coalition phase with 18 ministries");
 console.log("  → Win/Loss loop: 251-seat majority threshold");
+console.log("  → Save/Load functions ready (localStorage)");
