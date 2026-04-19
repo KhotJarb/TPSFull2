@@ -20,7 +20,7 @@ You begin as a rising political figure navigating the treacherous landscape of T
 ```
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
 │  📢 CAMPAIGN    │     │  🏛️ PARLIAMENT   │     │  👔 GOVERNING   │
-│  MODULE         │────▶│  RPG MODULE      │────▶│  MODULE         │
+│  MODULE         │────▶│     MODULE      │────▶│     MODULE      │
 │                 │     │                  │     │                 │
 │ • Choose Party  │     │ • Live Debates   │     │ • Crisis Events │
 │ • 8-Week Race   │     │ • Point of Order │     │ • Propose Laws  │
