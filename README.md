@@ -29,6 +29,12 @@ You begin as a rising political figure navigating the treacherous landscape of T
 └─────────────────┘     └──────────────────┘     └─────────────────┘
 ```
 
+## 🎮 Play Now
+
+👉 **[Play Thailand Political Simulation](https://khotjarb.github.io/TPSFull2/)**
+
+No downloads. No installs. Just click and play.
+
 ---
 
 ## 🆕 New Features in v1.0.1 Test
