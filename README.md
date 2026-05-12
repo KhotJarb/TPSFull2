@@ -2,7 +2,6 @@
 
 > **An advanced political RPG and simulation focusing on the life of a Thai Member of Parliament, combining campaign strategy with deep parliamentary roleplay.**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-gold.svg)](#license)
 [![Version](https://img.shields.io/badge/Version-1.0.1_Test-blue.svg)](#)
 [![Platform](https://img.shields.io/badge/Platform-Browser_(Zero_Install)-green.svg)](#getting-started)
 [![Language](https://img.shields.io/badge/Language-🇬🇧_EN_|_🇹🇭_TH-orange.svg)](#localization)
@@ -34,6 +33,8 @@ You begin as a rising political figure navigating the treacherous landscape of T
 👉 **[Play Thailand Political Simulation](https://khotjarb.github.io/TPSFull2/)**
 
 No downloads. No installs. Just click and play.
+
+## Latest Version --> **[See the Latest Version Here](https://github.com/KhotJarb/TPSFull)**
 
 ---
 
@@ -230,7 +231,7 @@ Switch languages via:
 
 ## 📄 License
 
-This project is released under the **MIT License**.
+This is a personal educational project. The political events are fictionalized and simplified for gameplay purposes. No endorsement of any real political party, institution, or ideology is intended.
 
 Built with 🇹🇭 by the TPS Development Team.
 
